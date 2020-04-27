@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src * gap: ws: https://ssl.gstatic.com;style-src * 'unsafe-inline' 'self' data: blob:;script-src * 'unsafe-inline' 'unsafe-eval' data: blob:;img-src * data: 'unsafe-inline' 'self'">
+    <title>Vue Scheduler Sample</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+  <link rel="stylesheet" href="./css/style.css">
+  <body style="margin: auto;">
+    <div id="app">
+      <div class="schedule">
+        <div>
+          <div
+            class="sc-rows"
+            :style="{width: settingData.titleDivW + 'px', height: contentH + 'px'}"
+          >
+            <div
+              class="sc-rows-scroll"
+              :style="{width: settingData.titleDivW + 'px'}"
+            >
+              <div 
+                v-for="(row, index) in scheduleData"
+                :key="index" 
+                :class="'timeline'"
+                :style="{'height': settingData.rowH + 'px', 'padding-top': (index == 0) ? padding + 'px' : '0px'}"
+              >
+                <span style="cursor: pointer;">{{ row.title }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="sc-main-box" style="width: 60%;">
+            <div
+              class="sc-main-scroll"
+              :style="{width: contentW + 'px'}"
+            >
+              <div class="sc-main">
+                <div
+                  class="timeline ui-droppable"
+                  :style="{height: settingData.dateDivH + 'px', background: 'black'}"
+                >
+                  <div
+                    v-for="n in dateCnt"
+                    :key="n"
+                    class="sc-time"
+                    :style="{width: dateDivW + 'px', cursor: 'pointer'}"
+                  >
+                    {{ getHeaderDate(n-1) }}
+                  </div>
+                </div>
+                <div
+                  class="timeline ui-droppable"
+                  :style="{height: settingData.timeDivH + 'px', background: '#6187AE'}"
+                >
+                  <div 
+                    v-for="n in (dateCnt * 24)"
+                    :key="n"
+                    class="sc-time"
+                    :style="{width: timeDivW + 'px'}"
+                  >
+                    {{ getHeaderTime(n - 1) }}
+                  </div>
+                </div>
+                <div 
+                  v-for="(row, index) in scheduleData" 
+                  :key="index"
+                  :class="'timeline ui-droppable'"
+                  :style="{'height': settingData.rowH + 'px'}"
+                >
+                  <unit-div 
+                    v-for="n in unitCnt"
+                    :key="n"
+                    :line-no="index"
+                    :row-data="row"
+                    :is-business="isBusiness(index, (n - 1))"
+                    :width="settingData.unitDivW + 'px'"
+                    @mouse-down="selectStartTime"
+                    @mouse-move="adjustTimeRange"
+                    @mouse-up="selectEndTime"
+                  ></unit-div>
+                  <div class="sc-bar green ui-draggable ui-resizable" style="left: 2430px; top: 0px; width: 270px; height: 130px;">
+                    <span style="float: right; padding: 5px">✖</span><span class="head">
+                      <span class="startTime time">2019/05/18 06:00</span>～<span class="endTime time">2019/05/18 12:00</span>
+                    </span>
+                    <span class="text">Mr.A reserved</span>
+                    <div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div>
+                  </div>
+                  <div class="sc-bar  ui-draggable ui-resizable" style="left: 3510px; top: 0px; width: 270px; height: 130px;">
+                    <span style="float: right; padding: 5px">✖</span>
+                    <span class="head">
+                      <span class="startTime time">2019/05/19 06:00</span>～<span class="endTime time">2019/05/19 12:00</span>
+                    </span>
+                    <span class="text">Mr.B reserved</span>
+                    <div class="ui-resizable-handle ui-resizable-e" style="z-index: 90;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br class="clear">
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript" src="./src/app.js"></script>
+</html>
