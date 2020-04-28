@@ -151,3 +151,17 @@
 .schedule .newAdd {
     background-color: #108000 !important;
 }
+
+.schedule .resizable-e {
+    cursor: e-resize;
+    width: 7px;
+    right: -5px;
+    top: 0;
+    height: 100%;
+}
+
+.schedule .resizable-handle {
+    position: absolute;
+    font-size: 0.1px;
+    display: block;
+}

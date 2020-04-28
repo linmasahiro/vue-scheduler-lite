@@ -15,37 +15,30 @@ const sampleData = [{
             '2020/04/20'
         ],
         businessHours: [{
-                dow: ['0'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['1'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['2'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['3'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['4'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['5'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['6'],
                 start: '00:00',
                 end: '24:00'
             },
@@ -74,37 +67,30 @@ const sampleData = [{
         title: 'Room２',
         noBusinessDate: [],
         businessHours: [{
-                dow: ['0'],
                 start: '10:00',
                 end: '17:00'
             },
             {
-                dow: ['1'],
                 start: '10:00',
                 end: '17:00'
             },
             {
-                dow: ['2'],
                 start: '10:00',
                 end: '17:00'
             },
             {
-                dow: ['3'],
                 start: '10:00',
                 end: '17:00'
             },
             {
-                dow: ['4'],
                 start: '10:00',
                 end: '17:00'
             },
             {
-                dow: ['5'],
                 start: '10:00',
                 end: '17:00'
             },
             {
-                dow: ['6'],
                 start: '10:00',
                 end: '17:00'
             },
@@ -123,37 +109,30 @@ const sampleData = [{
         title: 'Room３',
         noBusinessDate: [],
         businessHours: [{
-                dow: ['0'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['1'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['2'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['3'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['4'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['5'],
                 start: '00:00',
                 end: '24:00'
             },
             {
-                dow: ['6'],
                 start: '00:00',
                 end: '24:00'
             },
@@ -170,7 +149,7 @@ const sampleData = [{
     }
 ];
 
-Vue.component('unit-div', {
+const unitDiv = {
     props: {
         lineNo: Number,
         width: String,
@@ -210,10 +189,42 @@ Vue.component('unit-div', {
         >
         </div>
     `
-})
+}
+
+const reservedDiv = {
+    props: {
+        lineNo: Number,
+        unitWidth: Number,
+        rowData: Object,
+    },
+    data: function () {
+        return {}
+    },
+    methods: {
+        mousedown(e) {
+        },
+        mousemove(e) {
+        },
+        mouseup(e) {
+        }
+    },
+    template: `
+        <div class="sc-bar green" style="left: 25px; top: 0px; width: 100px; height: 130px;">
+          <span style="float: right; padding: 5px">✖</span><span class="head">
+              <span class="startTime time">2019/04/20 01:00</span>～<span class="endTime time">2019/04/20 05:00</span>
+          </span>
+          <span class="text">Mr.A reserved</span>
+          <div class="resizable-handle resizable-e" style="z-index: 90;"></div>
+        </div>
+    `
+}
 
 new Vue({
     el: '#app',
+    components : {
+        'unit-div': unitDiv,
+        'reserved-div': reservedDiv
+    },
     data() {
         return {
             scheduleData: sampleData,
@@ -296,10 +307,31 @@ new Vue({
             }
             
             // and check this div time bussiness hour
+            let weekDay = thisDate.getDay()
+            let businessHour = this.scheduleData[rowIndex].businessHours[weekDay]
+            if (businessHour.start == '00:00' && businessHour.end == '24:00') {
+                // alltime
+                return true
+            }
+
+            // has bussiness hour
+            let businessStartTime = businessHour.start.replace(":", "")
+            let businessEndTime = businessHour.end.replace(":", "")
             let dateMod = n % oneDayCnt
-
-
-            return true
+            let divStartCnt = dateMod * this.settingData.unit
+            let divStartHour = parseInt(divStartCnt / 60)
+            if (divStartHour < 10) {
+                divStartHour = "0" + divStartHour
+            }
+            let divStartMin = parseInt(divStartCnt % 60)
+            if (divStartMin < 10) {
+                divStartMin = "0" + divStartMin
+            }
+            let divStartTime = divStartHour + "" + divStartMin
+            if (divStartTime >= businessStartTime && divStartTime < businessEndTime) {
+                return true
+            }
+            return false
         },
         selectStartTime(e) {
             e.preventDefault();
