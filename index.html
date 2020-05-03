@@ -9,7 +9,10 @@
   <link rel="stylesheet" href="./css/style.css">
   <body style="margin: auto;">
     <div id="app">
-      <div class="schedule">
+      <div 
+        class="schedule"
+        @mousemove="setMousePosition"
+      >
         <div>
           <div
             class="sc-rows"
@@ -69,7 +72,7 @@
                 >
                   <unit-div 
                     v-for="n in unitCnt"
-                    :key="n"
+                    :key="'unit' + n"
                     :line-no="index"
                     :row-data="row"
                     :is-business="isBusiness(index, (n - 1))"
@@ -79,10 +82,17 @@
                     @mouse-up="selectEndTime"
                   ></unit-div>
                   <reserved-div 
-                    :name="index"
+                    v-for="(detail, index) in row.schedule"
+                    :key="'res' + index"
+                    :schedule-detail="detail"
                     :line-no="index"
-                    :row-data="row"
                     :unit-width="settingData.unitDivW"
+                    :title-div-width="settingData.titleDivW"
+                    :border-width="settingData.borderW"
+                    :min-date="settingData.startDate"
+                    :unit="settingData.unit"
+                    :mouse-x="mouseX"
+                    :mouse-y="mouseY"
                   ></reserved-div>
                 </div>
               </div>

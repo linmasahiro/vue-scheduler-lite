@@ -144,8 +144,12 @@
     background-color: #a0e7c9;
 }
 
-.schedule .green {
+.schedule .isMe {
     background-color: #108000 !important;
+}
+
+.schedule .notMe {
+    background-color: #ec920a !important;
 }
 
 .schedule .newAdd {
@@ -158,9 +162,7 @@
     right: -5px;
     top: 0;
     height: 100%;
-}
-
-.schedule .resizable-handle {
+    z-index: 90;
     position: absolute;
     font-size: 0.1px;
     display: block;

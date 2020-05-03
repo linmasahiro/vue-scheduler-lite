@@ -45,18 +45,16 @@ const sampleData = [{
         ],
         schedule: [{
                 text: 'Mr.A reserved',
-                class: 'green',
-                start: '2019/05/18 06:00',
-                end: '2019/05/18 12:00',
+                start: '2020/04/20 06:00',
+                end: '2020/04/21 01:00',
                 data: {
                     something: 'something'
                 }
             },
             {
                 text: 'Mr.B reserved',
-                class: '',
-                start: '2019/05/19 06:00',
-                end: '2019/05/19 12:00',
+                start: '2020/04/21 06:00',
+                end: '2020/04/21 12:00',
                 data: {
                     something: 'something'
                 }
@@ -97,9 +95,8 @@ const sampleData = [{
         ],
         schedule: [{
             text: 'Mr.C reserved',
-            class: 'green',
-            start: '2019/05/18 12:00',
-            end: '2019/05/18 17:00',
+            start: '2020/04/20 12:00',
+            end: '2020/04/20 17:00',
             data: {
                 something: 'something'
             }
@@ -139,9 +136,8 @@ const sampleData = [{
         ],
         schedule: [{
             text: 'Mr.D reserved',
-            class: 'green',
-            start: '2019/05/17 12:00',
-            end: '2019/05/17 18:00',
+            start: '2020/04/20 12:00',
+            end: '2020/04/20 18:00',
             data: {
                 something: 'something'
             }
@@ -195,26 +191,109 @@ const reservedDiv = {
     props: {
         lineNo: Number,
         unitWidth: Number,
-        rowData: Object,
+        titleDivWidth: Number,
+        borderWidth: Number,
+        scheduleDetail: Object,
+        minDate: String,
+        unit: Number,
+        mouseX: Number,
+        mouseY: Number
     },
     data: function () {
-        return {}
+        return {
+            styleObject: {
+                "left": "25px",
+                "width": "100px",
+                "height": "130px"
+            },
+            text: "",
+            startText: "",
+            endText: "",
+            isMe: false,
+            isEdit: false,
+        }
+    },
+    created() {
+        // set content text
+        this.text = this.scheduleDetail.text
+        this.startText = this.scheduleDetail.start
+        this.endText = this.scheduleDetail.end
+        
+        // set block position
+        let leftDiff = this.getMinutesDiff(new Date(this.minDate), new Date(this.scheduleDetail.start))
+        let shiftCnt = parseInt(leftDiff / this.unit)
+        let shiftLeft = this.unitWidth * shiftCnt + (shiftCnt * this.borderWidth)
+        this.styleObject.left = shiftLeft + "px"
+
+        // set block width
+        let rightDiff = this.getMinutesDiff(new Date(this.scheduleDetail.start), new Date(this.scheduleDetail.end))
+        let widthCnt = parseInt(rightDiff / this.unit)
+        let width = this.unitWidth * widthCnt + (widthCnt * this.borderWidth)
+        this.styleObject.width = width + "px"
     },
     methods: {
-        mousedown(e) {
+        /**
+         * Set the Block are edit status
+         * 
+         * @param Object e Event 
+         * 
+         * @returns void
+         */
+        editStart(e) {
+            e.preventDefault();
+            this.isEdit = true
+            console.log("editStart")
         },
-        mousemove(e) {
+        /**
+         * Adjust time event
+         * 
+         * @param Object e Event 
+         * 
+         * @returns void
+         */
+        editting(e) {
+            if (this.isEdit) {
+                let right = e.clientX - this.titleDivWidth
+            }
         },
-        mouseup(e) {
+        /**
+         * End edit and set new data
+         * 
+         * @param Object e Event 
+         * 
+         * @returns void
+         */
+        editEnd(e) {
+            console.log("editEnd")
+        },
+        /**
+         * Get minutes diff between date1 and date2
+         * 
+         * @param Object date1 DateObject1
+         * @param Object date2 DateObject2
+         * 
+         * @returns Int
+         */
+        getMinutesDiff(date1, date2) {
+            const diffTime = Math.abs(date2 - date1);
+            return Math.ceil(diffTime / (1000 * 60));
         }
     },
     template: `
-        <div class="sc-bar green" style="left: 25px; top: 0px; width: 100px; height: 130px;">
+        <div 
+          :class="['sc-bar', isMe ? 'isMe' : 'notMe']"
+          :style="styleObject"
+          @mousemove="editting"
+          @mouseup="editEnd"
+        >
           <span style="float: right; padding: 5px">✖</span><span class="head">
-              <span class="startTime time">2019/04/20 01:00</span>～<span class="endTime time">2019/04/20 05:00</span>
+              <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
           </span>
-          <span class="text">Mr.A reserved</span>
-          <div class="resizable-handle resizable-e" style="z-index: 90;"></div>
+          <span class="text">{{ text }}</span>
+          <div
+            class="resizable-e"
+            @mousedown="editStart"
+          ></div>
         </div>
     `
 }
@@ -248,11 +327,21 @@ new Vue({
             unitCnt: 0,
             isSelecting: false,
             newStartTimeDivLeft: null,
-            newStartTimeDivWidth: null
+            newStartTimeDivWidth: null,
+            mouseX: 0,
+            mouseY: 0
         }
     },
+    watch: {
+        mouseX: function(newVal, oldVal) {
+
+        },
+        mouseY: function(newVal, oldVal) {
+
+        },
+    },
     created() {
-        this.dateCnt = this.dateDiff(new Date(this.settingData.startDate), new Date(this.settingData.endDate)) + 1
+        this.dateCnt = this.getDateDiff(new Date(this.settingData.startDate), new Date(this.settingData.endDate)) + 1
         let oneDayCnt = parseInt(1440 / this.settingData.unit)
         this.unitCnt = oneDayCnt * this.dateCnt
         this.padding = this.settingData.dateDivH + this.settingData.timeDivH + (this.settingData.borderW * 10)
@@ -262,39 +351,91 @@ new Vue({
         this.timeDivW = 60 / this.settingData.unit * (this.settingData.unitDivW + this.settingData.borderW) - 1
     },
     methods: {
+        /**
+         * Set mouse position
+         * 
+         * @param Object e Event
+         * 
+         * @returns Void
+         */
+        setMousePosition(e) {
+            this.mouseX = e.clientX
+            this.mouseY = e.clientY
+        },
+        /**
+         * Get header area date-text
+         * 
+         * @param Int n Col index 
+         * 
+         * @returns String
+         */
         getHeaderDate(n) {
             let startDate = this.addDays(new Date(this.settingData.startDate), n)
             return this.dateFormatter(startDate, true)
         },
-        dateDiff(date1, date2) {
+        /**
+         * Get header area time-text
+         * 
+         * @param {*} n Col index
+         */
+        getHeaderTime(n) {
+            return n % 24
+        },
+        /**
+         * Get diff day between date1 and date2
+         * 
+         * @param Object date1 DateObejct1
+         * @param Object date2 DateObejct2
+         * 
+         * @returns Int
+         */
+        getDateDiff(date1, date2) {
             const diffTime = Math.abs(date2 - date1);
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         },
-        dateFormatter(val, withWeekDay) {
-            let year = val.getFullYear()
-            let month = val.getMonth() + 1
+        /**
+         * Custom date formatter
+         * 
+         * @param Obejct  dateObj     DateObejct 
+         * @param Boolean withWeekDay If u need weekday, set True
+         * 
+         * @returns String
+         */
+        dateFormatter(dateObj, withWeekDay) {
+            let year = dateObj.getFullYear()
+            let month = dateObj.getMonth() + 1
             if (month < 10) {
                 month = '0' + month
             }
-            let date = val.getDate()
+            let date = dateObj.getDate()
             if (withWeekDay) {
-                let day = val.getDay()
+                let day = dateObj.getDay()
                 return year + '/' + month + '/' + date + '(' + day + ')'
             }
             return year + '/' + month + '/' + date
         },
-        addDays(val, n) {
-            let year = val.getFullYear()
-            let month = val.getMonth()
-            let date = val.getDate() + n
+        /**
+         * Add days to date
+         * 
+         * @param Obejct dateObj DateObject 
+         * @param Int    n       Add number
+         * 
+         * @returns Object 
+         */
+        addDays(dateObj, n) {
+            let year = dateObj.getFullYear()
+            let month = dateObj.getMonth()
+            let date = dateObj.getDate() + n
             return new Date(year, month, date)
         },
-        getHeaderTime(n) {
-            return n % 24
-        },
-        getUnitDiveDatetime(n) {
-            return "2020/04/20 01:00"
-        },
+        /**
+         * Check this div is business or not
+         * 
+         * @param Int rowIndex Row index
+         * @param Int n        Col index
+         * 
+         * @returns Boolean
+         */
         isBusiness: function (rowIndex, n) {
             // first check this div business day
             let startDate = new Date(this.settingData.startDate)
@@ -333,17 +474,38 @@ new Vue({
             }
             return false
         },
+        /**
+         * The column are click start event
+         * 
+         * @param Object e Event
+         * 
+         * @returns void 
+         */
         selectStartTime(e) {
             e.preventDefault();
             this.newStartTimeDivLeft = e.target.offsetLeft
             this.newStartTimeDivWidth = e.target.offsetWidth
             this.isSelecting = true
         },
+        /**
+         * Add new block and adjust range
+         * 
+         * @param Object e Event
+         * 
+         * @returns void 
+         */
         adjustTimeRange(e) {
             if (this.isSelecting && e.target.offsetLeft >= (this.newStartTimeDivLeft + this.newStartTimeDivWidth)) {
                 console.log(2)
             }
         },
+        /**
+         * Add new block event
+         * 
+         * @param Object e Event
+         * 
+         * @returns void 
+         */
         selectEndTime(e) {
             console.log(3)
             this.isSelecting = false
