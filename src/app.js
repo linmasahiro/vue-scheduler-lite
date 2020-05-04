@@ -202,15 +202,19 @@ const reservedDiv = {
     data: function () {
         return {
             styleObject: {
-                "left": "25px",
-                "width": "100px",
+                "Opacity": 1,
+                "left": "0px",
+                "width": "0px",
                 "height": "130px"
             },
             text: "",
             startText: "",
             endText: "",
+            mouseXStarted: null,
+            mouseXMoving: null,
             isMe: false,
             isEdit: false,
+            isMove: false
         }
     },
     created() {
@@ -231,6 +235,13 @@ const reservedDiv = {
         let width = this.unitWidth * widthCnt + (widthCnt * this.borderWidth)
         this.styleObject.width = width + "px"
     },
+    watch: {
+        mouseX(newVal, oldVal) {
+            if (this.isMove) {
+                this.mouseXMoving = newVal
+            }
+        }
+    },
     methods: {
         /**
          * Set the Block are edit status
@@ -243,6 +254,17 @@ const reservedDiv = {
             e.preventDefault();
             this.isEdit = true
             console.log("editStart")
+        },
+        /**
+         * Set the block are move status
+         * 
+         * @param {*} e 
+         */
+        moveStart(e) {
+            this.styleObject.Opacity = 0.5
+            this.isMove = true
+            this.mouseXStarted = this.mouseXMoving = this.mouseX
+            console.log("moveStart")
         },
         /**
          * Adjust time event
@@ -264,7 +286,21 @@ const reservedDiv = {
          * @returns void
          */
         editEnd(e) {
-            console.log("editEnd")
+            // Check move status and move block
+            if (this.isMove && this.mouseXMoving != this.mouseXStarted) {
+                let movePx = this.mouseXMoving - this.mouseXStarted
+                let unitCnt = parseInt(movePx / this.unitWidth)
+                if (unitCnt <= 0) {
+                    unitCnt -= 1
+                }
+                this.styleObject.left = parseInt(this.styleObject.left.replace("px", "")) + (unitCnt * this.unitWidth) + (unitCnt * this.borderWidth) + "px"
+                this.mouseXStarted = this.mouseXMoving = null
+            }
+
+            // Return block all status and opacity
+            this.isEdit = false
+            this.isMove = false
+            this.styleObject.Opacity = 1
         },
         /**
          * Get minutes diff between date1 and date2
@@ -283,8 +319,9 @@ const reservedDiv = {
         <div 
           :class="['sc-bar', isMe ? 'isMe' : 'notMe']"
           :style="styleObject"
-          @mousemove="editting"
-          @mouseup="editEnd"
+          :draggable="'true'"
+          @dragstart="moveStart"
+          @dragend="editEnd"
         >
           <span style="float: right; padding: 5px">✖</span><span class="head">
               <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
@@ -361,6 +398,15 @@ new Vue({
         setMousePosition(e) {
             this.mouseX = e.clientX
             this.mouseY = e.clientY
+        },
+        /**
+         * Disable HTML5 DragEnd animation and Set mouse position
+         * 
+         * @param Obejct e Event
+         */
+        disableDragendAnimation(e) {
+            e.preventDefault();
+            this.setMousePosition(e)
         },
         /**
          * Get header area date-text
