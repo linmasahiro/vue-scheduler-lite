@@ -44,7 +44,6 @@ const sampleData = [{
             },
         ],
         schedule: [{
-                no: 1,
                 text: 'Mr.A reserved',
                 start: '2020/04/20 06:00',
                 end: '2020/04/21 01:00',
@@ -53,7 +52,6 @@ const sampleData = [{
                 }
             },
             {
-                no: 2,
                 text: 'Mr.B reserved',
                 start: '2020/04/21 06:00',
                 end: '2020/04/21 12:00',
@@ -96,7 +94,6 @@ const sampleData = [{
             },
         ],
         schedule: [{
-            no: 1,
             text: 'Mr.C reserved',
             start: '2020/04/20 12:00',
             end: '2020/04/20 17:00',
@@ -138,7 +135,6 @@ const sampleData = [{
             },
         ],
         schedule: [{
-            no: 1,
             text: 'Mr.D reserved',
             start: '2020/04/20 12:00',
             end: '2020/04/20 18:00',
