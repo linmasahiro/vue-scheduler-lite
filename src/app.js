@@ -44,6 +44,7 @@ const sampleData = [{
             },
         ],
         schedule: [{
+                no: 1,
                 text: 'Mr.A reserved',
                 start: '2020/04/20 06:00',
                 end: '2020/04/21 01:00',
@@ -52,6 +53,7 @@ const sampleData = [{
                 }
             },
             {
+                no: 2,
                 text: 'Mr.B reserved',
                 start: '2020/04/21 06:00',
                 end: '2020/04/21 12:00',
@@ -94,6 +96,7 @@ const sampleData = [{
             },
         ],
         schedule: [{
+            no: 1,
             text: 'Mr.C reserved',
             start: '2020/04/20 12:00',
             end: '2020/04/20 17:00',
@@ -135,6 +138,7 @@ const sampleData = [{
             },
         ],
         schedule: [{
+            no: 1,
             text: 'Mr.D reserved',
             start: '2020/04/20 12:00',
             end: '2020/04/20 18:00',
@@ -190,10 +194,14 @@ const unitDiv = {
 const reservedDiv = {
     props: {
         lineNo: Number,
+        keyNo: Number,
         unitWidth: Number,
+        unitHeight: Number,
         titleDivWidth: Number,
         borderWidth: Number,
-        scheduleDetail: Object,
+        startText: String,
+        endText: String,
+        contentText: String,
         minDate: String,
         unit: Number,
         mouseX: Number,
@@ -207,44 +215,66 @@ const reservedDiv = {
                 "width": "0px",
                 "height": "130px"
             },
-            text: "",
-            startText: "",
-            endText: "",
             mouseXStarted: null,
             mouseXMoving: null,
+            mouseYStarted: null,
+            mouseYMoving: null,
             isMe: false,
             isEdit: false,
             isMove: false
         }
     },
     created() {
-        // set content text
-        this.text = this.scheduleDetail.text
-        this.startText = this.scheduleDetail.start
-        this.endText = this.scheduleDetail.end
-        
-        // set block position
-        let leftDiff = this.getMinutesDiff(new Date(this.minDate), new Date(this.scheduleDetail.start))
-        let shiftCnt = parseInt(leftDiff / this.unit)
-        let shiftLeft = this.unitWidth * shiftCnt + (shiftCnt * this.borderWidth)
-        this.styleObject.left = shiftLeft + "px"
-
-        // set block width
-        let rightDiff = this.getMinutesDiff(new Date(this.scheduleDetail.start), new Date(this.scheduleDetail.end))
-        let widthCnt = parseInt(rightDiff / this.unit)
-        let width = this.unitWidth * widthCnt + (widthCnt * this.borderWidth)
-        this.styleObject.width = width + "px"
+        this.setLeftPosition()
+        this.setWidth()
     },
     watch: {
         mouseX(newVal, oldVal) {
             if (this.isMove) {
                 this.mouseXMoving = newVal
             }
+        },
+        mouseY(newVal, oldVal) {
+            if (this.isMove) {
+                this.mouseYMoving = newVal
+            }
+        },
+        startText(newVal, oldVal) {
+            if (newVal != oldVal) {
+                this.setLeftPosition()
+            }
+        },
+        endText(newVal, oldVal) {
+            if (newVal != oldVal) {
+                this.setWidth()
+            }
         }
     },
     methods: {
         /**
-         * Set the Block are edit status
+         * Set the Block left pixel
+         * 
+         * @returns void
+         */
+        setLeftPosition() {
+            let leftDiff = this.getMinutesDiff(new Date(this.minDate), new Date(this.startText))
+            let shiftCnt = parseInt(leftDiff / this.unit)
+            let shiftLeft = this.unitWidth * shiftCnt + (shiftCnt * this.borderWidth)
+            this.styleObject.left = shiftLeft + "px"
+        },
+        /**
+         * Set the Block width pixel
+         * 
+         * @returns void
+         */
+        setWidth() {
+            let rightDiff = this.getMinutesDiff(new Date(this.startText), new Date(this.endText))
+            let widthCnt = parseInt(rightDiff / this.unit)
+            let width = this.unitWidth * widthCnt + (widthCnt * this.borderWidth)
+            this.styleObject.width = width + "px"
+        },
+        /**
+         * Set the Block to edit status
          * 
          * @param Object e Event 
          * 
@@ -256,7 +286,7 @@ const reservedDiv = {
             console.log("editStart")
         },
         /**
-         * Set the block are move status
+         * Set the block to move status
          * 
          * @param {*} e 
          */
@@ -264,6 +294,7 @@ const reservedDiv = {
             this.styleObject.Opacity = 0.5
             this.isMove = true
             this.mouseXStarted = this.mouseXMoving = this.mouseX
+            this.mouseYStarted = this.mouseYMoving = this.mouseY
             console.log("moveStart")
         },
         /**
@@ -287,14 +318,30 @@ const reservedDiv = {
          */
         editEnd(e) {
             // Check move status and move block
-            if (this.isMove && this.mouseXMoving != this.mouseXStarted) {
+            if (this.isMove && (this.mouseXMoving != this.mouseXStarted || this.mouseYMoving != this.mouseYStarted)) {
+                // get x-axis moved count
                 let movePx = this.mouseXMoving - this.mouseXStarted
                 let unitCnt = parseInt(movePx / this.unitWidth)
-                if (unitCnt <= 0) {
-                    unitCnt -= 1
+                if (unitCnt == 0 && movePx < 0) {
+                    unitCnt = -1
                 }
-                this.styleObject.left = parseInt(this.styleObject.left.replace("px", "")) + (unitCnt * this.unitWidth) + (unitCnt * this.borderWidth) + "px"
                 this.mouseXStarted = this.mouseXMoving = null
+
+                // get y-axis moved count
+                let moveYpx = this.mouseYMoving - this.mouseYStarted
+                let unitLineCnt = parseInt(moveYpx / this.unitHeight)
+                let halfHeight = parseInt(this.unitHeight / 2)
+                let modPx = parseInt(moveYpx % this.unitHeight)
+                if (modPx >= halfHeight) {
+                    unitLineCnt ++
+                }
+                if (modPx <0 && Math.abs(modPx) >= halfHeight) {
+                    unitLineCnt --
+                }
+                this.mouseYStarted = this.mouseYMoving = null
+                
+                // result pass to father component's method
+                this.$emit("edit-schedule-data", this.lineNo, this.keyNo, unitCnt, unitLineCnt)
             }
 
             // Return block all status and opacity
@@ -326,7 +373,7 @@ const reservedDiv = {
           <span style="float: right; padding: 5px">✖</span><span class="head">
               <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
           </span>
-          <span class="text">{{ text }}</span>
+          <span class="text">{{ contentText }}</span>
           <div
             class="resizable-e"
             @mousedown="editStart"
@@ -337,7 +384,7 @@ const reservedDiv = {
 
 new Vue({
     el: '#app',
-    components : {
+    components: {
         'unit-div': unitDiv,
         'reserved-div': reservedDiv
     },
@@ -370,10 +417,10 @@ new Vue({
         }
     },
     watch: {
-        mouseX: function(newVal, oldVal) {
+        mouseX: function (newVal, oldVal) {
 
         },
-        mouseY: function(newVal, oldVal) {
+        mouseY: function (newVal, oldVal) {
 
         },
     },
@@ -461,7 +508,31 @@ new Vue({
             return year + '/' + month + '/' + date
         },
         /**
-         * Add days to date
+         * Custom datetime formatter
+         * 
+         * @param Obejct  dateObj     DateObejct
+         * 
+         * @returns String
+         */
+        datetimeFormatter(dateObj) {
+            let year = dateObj.getFullYear()
+            let month = dateObj.getMonth() + 1
+            if (month < 10) {
+                month = '0' + month
+            }
+            let date = dateObj.getDate()
+            let hours = dateObj.getHours()
+            if (hours < 10) {
+                hours = '0' + hours
+            }
+            let minutes = dateObj.getMinutes()
+            if (minutes < 10) {
+                minutes = '0' + minutes
+            }
+            return year + '/' + month + '/' + date + ' ' + hours + ':' + minutes
+        },
+        /**
+         * Add days to object
          * 
          * @param Obejct dateObj DateObject 
          * @param Int    n       Add number
@@ -469,10 +540,20 @@ new Vue({
          * @returns Object 
          */
         addDays(dateObj, n) {
-            let year = dateObj.getFullYear()
-            let month = dateObj.getMonth()
-            let date = dateObj.getDate() + n
-            return new Date(year, month, date)
+            dateObj.setTime(dateObj.getTime() + (n * 60 * 60 * 24 * 1000))
+            return dateObj
+        },
+        /**
+         * Add minutes to date object
+         * 
+         * @param Obejct dateObj DateObject 
+         * @param Int    n       Add number
+         * 
+         * @returns Object 
+         */
+        addMinutes(dateObj, n) {
+            dateObj.setTime(dateObj.getTime() + (n * 60 * 1000))
+            return dateObj
         },
         /**
          * Check this div is business or not
@@ -492,7 +573,7 @@ new Vue({
                 // today not business day
                 return false
             }
-            
+
             // and check this div time bussiness hour
             let weekDay = thisDate.getDay()
             let businessHour = this.scheduleData[rowIndex].businessHours[weekDay]
@@ -543,6 +624,32 @@ new Vue({
         adjustTimeRange(e) {
             if (this.isSelecting && e.target.offsetLeft >= (this.newStartTimeDivLeft + this.newStartTimeDivWidth)) {
                 console.log(2)
+            }
+        },
+        /**
+         * Edit Schedule Datetime Text
+         * 
+         * @param int lineNo  Row
+         * @param int keyNo   Key
+         * @param int unitCnt Moved unit count
+         * 
+         * @returns void 
+         */
+        editScheduleData(lineNo, keyNo, unitCnt, newLineNo) {
+            let targetData = this.scheduleData[lineNo].schedule[keyNo]
+            if (targetData) {
+                let changeDatetimeText = (datetimeText) => {
+                    let addMinutes = unitCnt * this.settingData.unit
+                    let dateObj = new Date(datetimeText)
+                    let newDateObj = this.addMinutes(dateObj, addMinutes)
+                    return this.datetimeFormatter(newDateObj)
+                }
+                targetData.start = changeDatetimeText(targetData.start)
+                targetData.end = changeDatetimeText(targetData.end)
+                if (newLineNo) {
+                    this.scheduleData[lineNo + newLineNo].schedule.push(targetData)
+                    this.scheduleData[lineNo].schedule.splice(keyNo, 1)
+                }
             }
         },
         /**

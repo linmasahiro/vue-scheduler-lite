@@ -83,17 +83,23 @@
                     @mouse-up="selectEndTime"
                   ></unit-div>
                   <reserved-div 
-                    v-for="(detail, index) in row.schedule"
-                    :key="'res' + index"
+                    v-for="(detail, keyNo) in row.schedule"
+                    :key="'res' + keyNo"
                     :schedule-detail="detail"
                     :line-no="index"
+                    :key-no="keyNo"
+                    :start-text="detail.start"
+                    :end-text="detail.end"
+                    :content-text="detail.text"
                     :unit-width="settingData.unitDivW"
+                    :unit-height="settingData.rowH"
                     :title-div-width="settingData.titleDivW"
                     :border-width="settingData.borderW"
                     :min-date="settingData.startDate"
                     :unit="settingData.unit"
                     :mouse-x="mouseX"
                     :mouse-y="mouseY"
+                    @edit-schedule-data="editScheduleData"
                   ></reserved-div>
                 </div>
               </div>
