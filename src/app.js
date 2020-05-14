@@ -369,6 +369,12 @@ const reservedDiv = {
             this.styleObject.Opacity = 1
         },
         /**
+         * Delete this event
+         */
+        deleteEvent() {
+            this.$emit("delete-schedule-data", this.rowIndex, this.keyNo)
+        },
+        /**
          * Get minutes diff between date1 and date2
          * 
          * @param Object date1 DateObject1
@@ -390,7 +396,7 @@ const reservedDiv = {
           @dragend="moveEnd"
           @dragover="editting($event)"
         >
-          <span style="float: right; padding: 5px">✖</span><span class="head">
+          <span style="float: right; padding: 5px" @click="deleteEvent">✖</span><span class="head">
               <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
           </span>
           <span class="text">{{ contentText }}</span>
@@ -415,7 +421,8 @@ new Vue({
             scheduleData: sampleData,
             settingData: {
                 startDate: '2020/04/20',
-                endDate: '2020/04/23',
+                endDate: '2020/04/26',
+                weekdayText : [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ],
                 unit: 60,
                 borderW: 1,
                 dateDivH: 25,
@@ -443,9 +450,9 @@ new Vue({
         this.dateCnt = this.getDateDiff(new Date(this.settingData.startDate), new Date(this.settingData.endDate)) + 1
         let oneDayCnt = parseInt(1440 / this.settingData.unit)
         this.unitCnt = oneDayCnt * this.dateCnt
-        this.padding = this.settingData.dateDivH + this.settingData.timeDivH + (this.settingData.borderW * 10)
+        this.padding = this.settingData.dateDivH + this.settingData.timeDivH + (this.settingData.borderW * 4)
         this.dateDivW = this.settingData.unitDivW * oneDayCnt + (oneDayCnt - this.settingData.borderW)
-        this.contentH = this.padding + (this.settingData.rowH * 3)
+        this.contentH = this.padding + ((this.settingData.rowH + this.settingData.borderW * 2) * this.scheduleData.length)
         this.contentW = this.dateDivW * this.dateCnt + (this.dateCnt * this.settingData.borderW)
         this.timeDivW = 60 / this.settingData.unit * (this.settingData.unitDivW + this.settingData.borderW) - 1
     },
@@ -517,7 +524,8 @@ new Vue({
             let date = dateObj.getDate()
             if (withWeekDay) {
                 let day = dateObj.getDay()
-                return year + '/' + month + '/' + date + '(' + day + ')'
+                let dayText = this.settingData.weekdayText[day]
+                return year + '/' + month + '/' + date + '(' + dayText + ')'
             }
             return year + '/' + month + '/' + date
         },
@@ -692,6 +700,17 @@ new Vue({
                 }
                 targetData.end = newEndText
             }
+        },
+        /**
+         * Delete Schedule
+         * 
+         * @param int rowIndex  Row
+         * @param int keyNo     Key
+         * 
+         * @returns void 
+         */
+        deleteScheduleData(rowIndex, keyNo) {
+            this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
         },
         /**
          * Add new block event
