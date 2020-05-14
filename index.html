@@ -69,6 +69,7 @@
                   :key="index"
                   :class="'timeline'"
                   :style="{'height': settingData.rowH + 'px'}"
+                  @dragenter="setDragenterRow(index)"
                 >
                   <unit-div 
                     v-for="n in unitCnt"
@@ -79,9 +80,8 @@
                     :is-business="isBusiness(index, (n - 1))"
                     :width="settingData.unitDivW + 'px'"
                     @mouse-down="selectStartTime"
-                    @mouse-move="adjustTimeRange"
                     @mouse-up="selectEndTime"
-                    @set-dragenter-row="setDragenterRow"
+                    @set-dragenter-row-and-index="setDragenterRowAndIndex"
                   ></unit-div>
                   <reserved-div 
                     v-for="(detail, keyNo) in row.schedule"
@@ -101,6 +101,7 @@
                     :clear-switch="clearSwitch"
                     :dragenter-row-index="dragenterRowIndex"
                     :dragenter-key-index="dragenterKeyIndex"
+                    @set-dragenter-row-and-index="setDragenterRowAndIndex"
                     @move-schedule-data="moveScheduleData"
                     @edit-schedule-data="editScheduleData"
                     @delete-schedule-data="deleteScheduleData"

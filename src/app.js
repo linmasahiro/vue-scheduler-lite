@@ -45,16 +45,16 @@ const sampleData = [{
         ],
         schedule: [{
                 text: 'Mr.A reserved',
-                start: '2020/04/20 06:00',
-                end: '2020/04/21 01:00',
+                start: '2020/04/21 06:00',
+                end: '2020/04/22 01:00',
                 data: {
                     something: 'something'
                 }
             },
             {
                 text: 'Mr.B reserved',
-                start: '2020/04/21 06:00',
-                end: '2020/04/21 12:00',
+                start: '2020/04/22 06:00',
+                end: '2020/04/22 12:00',
                 data: {
                     something: 'something'
                 }
@@ -163,20 +163,17 @@ const unitDiv = {
             }
             this.$emit('mouse-down', e)
         },
-        mousemove(e) {
-            if (!this.isBusiness) {
-                return false
-            }
-            this.$emit('mouse-move', e)
-        },
         mouseup(e) {
             if (!this.isBusiness) {
                 return false
             }
             this.$emit('mouse-up', e)
         },
-        setDragenterRow() {
-            this.$emit('set-dragenter-row', this.rowIndex, this.keyIndex)
+        setDragenterRowAndIndex() {
+            if (!this.isBusiness) {
+                return false
+            }
+            this.$emit('set-dragenter-row-and-index', this.rowIndex, this.keyIndex)
         }
     },
     template: `
@@ -184,9 +181,8 @@ const unitDiv = {
           :class="['tl', isBusiness ? 'can-res' : 'cant-res']"
           :style="{width: width}"
           @mousedown="mousedown"
-          @mousemove="mousemove"
           @mouseup="mouseup"
-          @dragenter="setDragenterRow"
+          @dragenter="setDragenterRowAndIndex"
         >
         </div>
     `
@@ -241,7 +237,7 @@ const reservedDiv = {
             }
         },
         dragenterKeyIndex(newVal, oldVal) {
-            if (newVal != oldVal && this.isEdit) {
+            if (newVal != oldVal && this.dragenterRowIndex == this.rowIndex && this.isEdit) {
                 this.editting()
             }
         },
@@ -312,7 +308,6 @@ const reservedDiv = {
                         let unitCnt = parseInt(this.dragenterKeyIndex - this.endLineNo)
                         this.$emit("edit-schedule-data", this.rowIndex, this.keyNo, unitCnt)
                     }
-
                 }
             }
         },
@@ -374,6 +369,9 @@ const reservedDiv = {
         deleteEvent() {
             this.$emit("delete-schedule-data", this.rowIndex, this.keyNo)
         },
+        setDragenterRowAndIndex() {
+            this.$emit('set-dragenter-row-and-index', this.rowIndex, null)
+        },
         /**
          * Get minutes diff between date1 and date2
          * 
@@ -395,6 +393,7 @@ const reservedDiv = {
           @dragstart="moveStart"
           @dragend="moveEnd"
           @dragover="editting($event)"
+          @dragenter="setDragenterRowAndIndex"
         >
           <span style="float: right; padding: 5px" @click="deleteEvent">✖</span><span class="head">
               <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
@@ -464,7 +463,18 @@ new Vue({
          * 
          * @returns void 
          */
-        setDragenterRow(rowIndex, currentIndex) {
+        setDragenterRow(rowIndex) {
+            this.dragenterRowIndex = rowIndex
+        },
+        /**
+         * Draggable Enter Event
+         * 
+         * @param int rowIndex     Row Index
+         * @param int currentIndex Current Index
+         * 
+         * @returns void 
+         */
+        setDragenterRowAndIndex(rowIndex, currentIndex) {
             this.dragenterRowIndex = rowIndex
             this.dragenterKeyIndex = currentIndex
         },
@@ -637,16 +647,16 @@ new Vue({
             this.isSelecting = true
         },
         /**
-         * Add new block and adjust range
+         * Add new block event
          * 
          * @param Object e Event
          * 
          * @returns void 
          */
-        adjustTimeRange(e) {
-            if (this.isSelecting && e.target.offsetLeft >= (this.newStartTimeDivLeft + this.newStartTimeDivWidth)) {
-                console.log(2)
-            }
+        selectEndTime(e) {
+            console.log(3)
+            this.isSelecting = false
+            this.clearSwitch = !this.clearSwitch
         },
         /**
          * Edit Schedule Datetime Text
@@ -660,6 +670,21 @@ new Vue({
         moveScheduleData(rowIndex, keyNo, unitCnt) {
             let targetData = this.scheduleData[rowIndex].schedule[keyNo]
             if (targetData) {
+                let isBusinessFlag = true
+                let isBusinessChecked = false
+                let isBusiness = (startDatetimeText, endDatetimeText) => {
+                    let startDiff = this.getMinutesDiff(new Date(this.settingData.startDate), new Date(startDatetimeText))
+                    let startCnt = parseInt(startDiff / this.settingData.unit)
+                    let endDiff = this.getMinutesDiff(new Date(this.settingData.startDate), new Date(endDatetimeText))
+                    let endCnt = parseInt(endDiff / this.settingData.unit)
+                    let result = true
+                    for (var i = startCnt; i < endCnt; i++) {
+                        if (! this.isBusiness(this.dragenterRowIndex, i)) {
+                            result = false
+                        }
+                    }
+                    return result
+                }
                 if (unitCnt != 0) {
                     let changeDatetimeText = (datetimeText) => {
                         let addMinutes = unitCnt * this.settingData.unit
@@ -667,12 +692,27 @@ new Vue({
                         let newDateObj = this.addMinutes(dateObj, addMinutes)
                         return this.datetimeFormatter(newDateObj)
                     }
-                    targetData.start = changeDatetimeText(targetData.start)
-                    targetData.end = changeDatetimeText(targetData.end)
+                    let newStartDatetime = changeDatetimeText(targetData.start)
+                    let newEndDatetime = changeDatetimeText(targetData.end)
+                    isBusinessFlag = isBusiness(newStartDatetime, newEndDatetime)
+                    if (isBusinessFlag) {
+                        targetData.start = newStartDatetime
+                        targetData.end = newEndDatetime
+                    }
+                    isBusinessChecked = true
                 }
                 if (rowIndex != this.dragenterRowIndex && this.scheduleData[this.dragenterRowIndex]) {
-                    this.scheduleData[this.dragenterRowIndex].schedule.push(targetData)
-                    this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
+                    if (isBusinessChecked && ! isBusinessFlag) {
+                        return
+                    }
+                    if (! isBusinessChecked && isBusinessFlag) {
+                        isBusinessFlag = isBusiness(targetData.start, targetData.end)
+                        isBusinessChecked = true
+                    }
+                    if (isBusinessChecked && isBusinessFlag) {
+                        this.scheduleData[this.dragenterRowIndex].schedule.push(targetData)
+                        this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
+                    }
                 }
             }
         },
@@ -713,16 +753,16 @@ new Vue({
             this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
         },
         /**
-         * Add new block event
+         * Get minutes diff between date1 and date2
          * 
-         * @param Object e Event
+         * @param Object date1 DateObject1
+         * @param Object date2 DateObject2
          * 
-         * @returns void 
+         * @returns Int
          */
-        selectEndTime(e) {
-            console.log(3)
-            this.isSelecting = false
-            this.clearSwitch = !this.clearSwitch
+        getMinutesDiff(date1, date2) {
+            const diffTime = Math.abs(date2 - date1);
+            return Math.ceil(diffTime / (1000 * 60));
         }
     }
 })
