@@ -151,23 +151,31 @@ const unitDiv = {
         keyIndex: Number,
         width: String,
         rowData: Object,
-        isBusiness: Boolean
+        isBusiness: Boolean,
+        isSelecting: Boolean,
+        isSelectingRowIndex: Number
     },
     data: function () {
         return {}
     },
     methods: {
-        mousedown(e) {
+        mousedown() {
             if (!this.isBusiness) {
                 return false
             }
-            this.$emit('mouse-down', e)
+            this.$emit('mouse-down', this.rowIndex, this.keyIndex)
         },
-        mouseup(e) {
+        mouseenter() {
+            if (!this.isSelecting || this.rowIndex != this.isSelectingRowIndex || !this.isBusiness) {
+                return false
+            }
+            this.$emit('mouse-enter', this.keyIndex)
+        },
+        mouseup() {
             if (!this.isBusiness) {
                 return false
             }
-            this.$emit('mouse-up', e)
+            this.$emit('mouse-up', this.rowIndex, this.keyIndex)
         },
         setDragenterRowAndIndex() {
             if (!this.isBusiness) {
@@ -181,6 +189,7 @@ const unitDiv = {
           :class="['tl', isBusiness ? 'can-res' : 'cant-res']"
           :style="{width: width}"
           @mousedown="mousedown"
+          @mouseenter="mouseenter"
           @mouseup="mouseup"
           @dragenter="setDragenterRowAndIndex"
         >
@@ -203,7 +212,10 @@ const reservedDiv = {
         unit: Number,
         clearSwitch: Boolean,
         dragenterRowIndex: Number,
-        dragenterKeyIndex: Number
+        dragenterKeyIndex: Number,
+        isSelecting: Boolean,
+        isSelectingRowIndex: Number,
+        isSelectingIndex: Number
     },
     data: function () {
         return {
@@ -234,6 +246,15 @@ const reservedDiv = {
         endText(newVal, oldVal) {
             if (newVal != oldVal) {
                 this.setWidth()
+                if (this.isSelecting &&
+                    this.mouseXStarted &&
+                    this.rowIndex == this.isSelectingRowIndex &&
+                    this.keyNo == this.isSelectingIndex
+                ) {
+                    let diff = this.getMinutesDiff(new Date(oldVal), new Date(newVal))
+                    let cnt = parseInt(diff / this.unit)
+                    this.mouseXStarted += this.unitWidth * cnt
+                }
             }
         },
         dragenterKeyIndex(newVal, oldVal) {
@@ -280,6 +301,10 @@ const reservedDiv = {
          * @returns void
          */
         editStart(e) {
+            if (this.isSelecting) {
+                e.preventDefault()
+                return
+            }
             this.isEdit = true
             this.mouseXStarted = e.clientX
             this.styleObject.Opacity = 0.5
@@ -292,6 +317,10 @@ const reservedDiv = {
          * @returns void
          */
         editting(e) {
+            if (this.isSelecting) {
+                e.preventDefault()
+                return
+            }
             if (this.isEdit) {
                 if (e) {
                     // adjust by Mouse X-axio
@@ -327,10 +356,15 @@ const reservedDiv = {
          * @param Object e 
          */
         moveStart(e) {
+            if (this.isSelecting) {
+                e.preventDefault()
+                return
+            }
             if (!this.isEdit) {
                 this.styleObject.Opacity = 0.5
                 this.isMove = true
                 this.mouseXStarted = e.clientX
+                this.$emit('set-dragenter-row-and-index', this.rowIndex, null)
             }
         },
         /**
@@ -369,8 +403,33 @@ const reservedDiv = {
         deleteEvent() {
             this.$emit("delete-schedule-data", this.rowIndex, this.keyNo)
         },
-        setDragenterRowAndIndex() {
-            this.$emit('set-dragenter-row-and-index', this.rowIndex, null)
+        /**
+         * Mouse move event for Add new schedule
+         */
+        mousemove(e) {
+            if (
+                this.rowIndex == this.isSelectingRowIndex &&
+                this.keyNo == this.isSelectingIndex
+            ) {
+                if (this.isSelecting && this.mouseXStarted) {
+                    let movePx = e.clientX - this.mouseXStarted
+                    let unitCnt = parseInt(movePx / this.unitWidth)
+                    if (unitCnt != 0 && unitCnt < 0) {
+                        this.mouseXStarted = e.clientX
+                        this.$emit("edit-schedule-data", this.rowIndex, this.keyNo, unitCnt)
+                    }
+                }
+                if (this.isSelecting && !this.mouseXStarted) {
+                    this.mouseXStarted = e.clientX
+                    this.styleObject.Opacity = 0.5
+                }
+            }
+        },
+        /**
+         * Mouse up event for Add new schedule
+         */
+        mouseup() {
+            this.$emit('mouse-up')
         },
         /**
          * Get minutes diff between date1 and date2
@@ -393,7 +452,8 @@ const reservedDiv = {
           @dragstart="moveStart"
           @dragend="moveEnd"
           @dragover="editting($event)"
-          @dragenter="setDragenterRowAndIndex"
+          @mouseup="mouseup"
+          @mousemove="mousemove"
         >
           <span style="float: right; padding: 5px" @click="deleteEvent">✖</span><span class="head">
               <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
@@ -421,7 +481,7 @@ new Vue({
             settingData: {
                 startDate: '2020/04/20',
                 endDate: '2020/04/26',
-                weekdayText : [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ],
+                weekdayText: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                 unit: 60,
                 borderW: 1,
                 dateDivH: 25,
@@ -438,8 +498,8 @@ new Vue({
             dateCnt: 0,
             unitCnt: 0,
             isSelecting: false,
-            newStartTimeDivLeft: null,
-            newStartTimeDivWidth: null,
+            isSelectingRowIndex: null,
+            isSelectingIndex: null,
             dragenterRowIndex: null,
             dragenterKeyIndex: null,
             clearSwitch: false
@@ -640,22 +700,61 @@ new Vue({
          * 
          * @returns void 
          */
-        selectStartTime(e) {
-            e.preventDefault();
-            this.newStartTimeDivLeft = e.target.offsetLeft
-            this.newStartTimeDivWidth = e.target.offsetWidth
+        selectStartTime(rowIndex, keyIndex) {
             this.isSelecting = true
+            this.isSelectingRowIndex = rowIndex
+            let addMinutes = (keyIndex - 1) * this.settingData.unit
+            let addMinutes2 = keyIndex * this.settingData.unit
+            let newStartDateObj = this.addMinutes(new Date(this.settingData.startDate), addMinutes)
+            let newEndDateObj = this.addMinutes(new Date(this.settingData.startDate), addMinutes2)
+            this.scheduleData[rowIndex].schedule.push({
+                text: 'New',
+                start: this.datetimeFormatter(newStartDateObj),
+                end: this.datetimeFormatter(newEndDateObj)
+            })
+            this.isSelectingIndex = (this.scheduleData[this.isSelectingRowIndex].schedule.length - 1)
+        },
+        /**
+         * New event adjust event
+         * 
+         * @param int keyIndex 
+         */
+        adjustTimeRange(keyIndex) {
+            let targetIndex = (this.scheduleData[this.isSelectingRowIndex].schedule.length - 1)
+            let targetData = this.scheduleData[this.isSelectingRowIndex].schedule[targetIndex]
+            if (targetData) {
+                let addMinutes = keyIndex * this.settingData.unit
+                let newEndDateObj = this.addMinutes(new Date(this.settingData.startDate), addMinutes)
+                let isPermission = true
+                // Check other event
+                for(n in this.scheduleData[this.isSelectingRowIndex].schedule) {
+                    if (n != targetIndex) {
+                        let diffData = this.scheduleData[this.isSelectingRowIndex].schedule[n]
+                        if ((new Date(diffData.start) - new Date(targetData.start)) < 0) {
+                            continue
+                        }
+                        if ((new Date(diffData.start) - newEndDateObj) >= 0) {
+                            continue
+                        }
+                        isPermission = false
+                    }
+                }
+                // Check Businessday
+                // TODO
+                if (isPermission) {
+                    targetData.end = this.datetimeFormatter(newEndDateObj)
+                }
+            }
         },
         /**
          * Add new block event
          * 
-         * @param Object e Event
-         * 
          * @returns void 
          */
-        selectEndTime(e) {
-            console.log(3)
+        selectEndTime() {
             this.isSelecting = false
+            this.isSelectingRowIndex = null
+            this.isSelectingIndex = null
             this.clearSwitch = !this.clearSwitch
         },
         /**
@@ -679,7 +778,7 @@ new Vue({
                     let endCnt = parseInt(endDiff / this.settingData.unit)
                     let result = true
                     for (var i = startCnt; i < endCnt; i++) {
-                        if (! this.isBusiness(this.dragenterRowIndex, i)) {
+                        if (!this.isBusiness(this.dragenterRowIndex, i)) {
                             result = false
                         }
                     }
@@ -702,10 +801,10 @@ new Vue({
                     isBusinessChecked = true
                 }
                 if (rowIndex != this.dragenterRowIndex && this.scheduleData[this.dragenterRowIndex]) {
-                    if (isBusinessChecked && ! isBusinessFlag) {
+                    if (isBusinessChecked && !isBusinessFlag) {
                         return
                     }
-                    if (! isBusinessChecked && isBusinessFlag) {
+                    if (!isBusinessChecked && isBusinessFlag) {
                         isBusinessFlag = isBusiness(targetData.start, targetData.end)
                         isBusinessChecked = true
                     }
@@ -736,6 +835,9 @@ new Vue({
                 }
                 let newEndText = changeDatetimeText(targetData.end)
                 if (targetData.start == newEndText) {
+                    return false
+                }
+                if (new Date(newEndText) - new Date(targetData.start) < 0) {
                     return false
                 }
                 targetData.end = newEndText

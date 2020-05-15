@@ -78,8 +78,11 @@
                     :key-index="n"
                     :row-data="row"
                     :is-business="isBusiness(index, (n - 1))"
+                    :is-selecting="isSelecting"
+                    :is-selecting-row-index="isSelectingRowIndex"
                     :width="settingData.unitDivW + 'px'"
                     @mouse-down="selectStartTime"
+                    @mouse-enter="adjustTimeRange"
                     @mouse-up="selectEndTime"
                     @set-dragenter-row-and-index="setDragenterRowAndIndex"
                   ></unit-div>
@@ -101,10 +104,14 @@
                     :clear-switch="clearSwitch"
                     :dragenter-row-index="dragenterRowIndex"
                     :dragenter-key-index="dragenterKeyIndex"
+                    :is-selecting="isSelecting"
+                    :is-selecting-row-index="isSelectingRowIndex"
+                    :is-selecting-index="isSelectingIndex"
                     @set-dragenter-row-and-index="setDragenterRowAndIndex"
                     @move-schedule-data="moveScheduleData"
                     @edit-schedule-data="editScheduleData"
                     @delete-schedule-data="deleteScheduleData"
+                    @mouse-up="selectEndTime"
                   ></reserved-div>
                 </div>
               </div>
