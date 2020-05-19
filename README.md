@@ -1,4 +1,15 @@
-# vue-scheduler
-A support drag and drop scheduler on vue.js
+# vue-scheduler-lite
 
-[Demo](https://linmasahiro.github.io/vue-scheduler/)
+![SampleGif](https://linmasahiro.github.io/vue-scheduler/sample.gif)
+
+A very simple scheduler for vue.js
+
+*Support*
+
++Business-day Support
++Business-hours Support
++Drag and Drop Support
++Resize Schedule Support
++Touch Device Support
+
+[Online Demo](https://linmasahiro.github.io/vue-scheduler-lite/static/)

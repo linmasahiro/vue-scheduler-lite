@@ -1,149 +1,17 @@
 /**
- * vue-scheduler
+ * vue-scheduler-lite
  * 
  * A support drag and drop scheduler on vue.js
  * 
  * @date   2020/04/18
  * @author Lin Masahiro(k80092@hotmail.com)
- * @see https://github.com/linmasahiro/vue-scheduler
+ * @see https://github.com/linmasahiro/vue-scheduler-lite
+ * 
+ * MIT License
  */
 
 
-const sampleData = [{
-        title: 'Room１',
-        noBusinessDate: [
-            '2020/04/20'
-        ],
-        businessHours: [{
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-        ],
-        schedule: [{
-                text: 'Mr.A reserved',
-                start: '2020/04/21 06:00',
-                end: '2020/04/22 01:00',
-                data: {
-                    something: 'something'
-                }
-            },
-            {
-                text: 'Mr.B reserved',
-                start: '2020/04/22 06:00',
-                end: '2020/04/22 12:00',
-                data: {
-                    something: 'something'
-                }
-            }
-        ]
-    },
-    {
-        title: 'Room２',
-        noBusinessDate: [],
-        businessHours: [{
-                start: '10:00',
-                end: '17:00'
-            },
-            {
-                start: '10:00',
-                end: '17:00'
-            },
-            {
-                start: '10:00',
-                end: '17:00'
-            },
-            {
-                start: '10:00',
-                end: '17:00'
-            },
-            {
-                start: '10:00',
-                end: '17:00'
-            },
-            {
-                start: '10:00',
-                end: '17:00'
-            },
-            {
-                start: '10:00',
-                end: '17:00'
-            },
-        ],
-        schedule: [{
-            text: 'Mr.C reserved',
-            start: '2020/04/20 12:00',
-            end: '2020/04/20 17:00',
-            data: {
-                something: 'something'
-            }
-        }]
-    },
-    {
-        title: 'Room３',
-        noBusinessDate: [],
-        businessHours: [{
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-            {
-                start: '00:00',
-                end: '24:00'
-            },
-        ],
-        schedule: [{
-            text: 'Mr.D reserved',
-            start: '2020/04/20 12:00',
-            end: '2020/04/20 18:00',
-            data: {
-                something: 'something'
-            }
-        }]
-    }
-];
+
 
 const unitDiv = {
     props: {
@@ -172,10 +40,7 @@ const unitDiv = {
             this.$emit('mouse-enter', this.keyIndex)
         },
         mouseup() {
-            if (!this.isBusiness) {
-                return false
-            }
-            this.$emit('mouse-up', this.rowIndex, this.keyIndex)
+            this.$emit('mouse-up')
         },
         setDragenterRowAndIndex() {
             if (!this.isBusiness) {
@@ -209,6 +74,7 @@ const reservedDiv = {
         endText: String,
         contentText: String,
         minDate: String,
+        maxDate: String,
         unit: Number,
         clearSwitch: Boolean,
         dragenterRowIndex: Number,
@@ -225,6 +91,7 @@ const reservedDiv = {
                 "width": "0px",
                 "height": "130px"
             },
+            isShow: false,
             mouseXStarted: null,
             startLineNo: null,
             endLineNo: null,
@@ -234,17 +101,23 @@ const reservedDiv = {
         }
     },
     created() {
+        if ((new Date(this.startText) - new Date(this.minDate)) < 0 && (new Date(this.endText) - new Date(this.minDate)) < 0) {
+            return
+        }
         this.setLeftPosition()
         this.setWidth()
+        this.isShow = true
     },
     watch: {
         startText(newVal, oldVal) {
             if (newVal != oldVal) {
+                this.startDate = newVal
                 this.setLeftPosition()
             }
         },
         endText(newVal, oldVal) {
             if (newVal != oldVal) {
+                this.endDate = newVal
                 this.setWidth()
                 if (this.isSelecting &&
                     this.mouseXStarted &&
@@ -346,6 +219,9 @@ const reservedDiv = {
          * @returns void
          */
         editEnd() {
+            if (this.isEdit) {
+                this.$emit('edit-event', this.startText, this.endText)
+            }
             this.isEdit = false
             this.styleObject.Opacity = 1
             this.mouseXStarted = null
@@ -415,7 +291,7 @@ const reservedDiv = {
                     let movePx = e.clientX - this.mouseXStarted
                     let unitCnt = parseInt(movePx / this.unitWidth)
                     if (unitCnt != 0 && unitCnt < 0) {
-                        this.mouseXStarted = e.clientX
+                        this.mouseXStarted = e.clientX + this.unitWidth
                         this.$emit("edit-schedule-data", this.rowIndex, this.keyNo, unitCnt)
                     }
                 }
@@ -429,7 +305,7 @@ const reservedDiv = {
          * Mouse up event for Add new schedule
          */
         mouseup() {
-            this.$emit('mouse-up')
+            this.$emit('mouse-up', this.startText, this.endText)
         },
         /**
          * Get minutes diff between date1 and date2
@@ -440,12 +316,13 @@ const reservedDiv = {
          * @returns Int
          */
         getMinutesDiff(date1, date2) {
-            const diffTime = Math.abs(date2 - date1);
+            const diffTime = date2 - date1;
             return Math.ceil(diffTime / (1000 * 60));
         }
     },
     template: `
         <div 
+          v-if="isShow"
           :class="['sc-bar', isMe ? 'isMe' : 'notMe']"
           :style="styleObject"
           :draggable="'true'"
@@ -454,6 +331,7 @@ const reservedDiv = {
           @dragover="editting($event)"
           @mouseup="mouseup"
           @mousemove="mousemove"
+          @click="$emit('click-event')"
         >
           <span style="float: right; padding: 5px" @click="deleteEvent">✖</span><span class="head">
               <span class="startTime time">{{ startText }}</span>～<span class="endTime time">{{ endText }}</span>
@@ -469,15 +347,17 @@ const reservedDiv = {
     `
 }
 
-new Vue({
-    el: '#app',
+const vueSc = {
     components: {
         'unit-div': unitDiv,
         'reserved-div': reservedDiv
     },
+    props: {
+        scheduleData: Array,
+        setting: Object,
+    },
     data() {
         return {
-            scheduleData: sampleData,
             settingData: {
                 startDate: '2020/04/20',
                 endDate: '2020/04/26',
@@ -506,6 +386,7 @@ new Vue({
         }
     },
     created() {
+        this.settingData = Object.assign(this.settingData, this.setting);
         this.dateCnt = this.getDateDiff(new Date(this.settingData.startDate), new Date(this.settingData.endDate)) + 1
         let oneDayCnt = parseInt(1440 / this.settingData.unit)
         this.unitCnt = oneDayCnt * this.dateCnt
@@ -694,6 +575,28 @@ new Vue({
             return false
         },
         /**
+         * Check this range is business or not
+         * 
+         * @param Int    rowIndex      Row index
+         * @param String startDateText StartDate text
+         * @param String endDateText   EndDate text
+         * 
+         * @returns Boolean
+         */
+        isBusinessOnRange(rowIndex, startDateText, endDateText) {
+            let startDiff = this.getMinutesDiff(new Date(this.settingData.startDate), new Date(startDateText))
+            let startCnt = parseInt(startDiff / this.settingData.unit)
+            let endDiff = this.getMinutesDiff(new Date(this.settingData.startDate), new Date(endDateText))
+            let endCnt = parseInt(endDiff / this.settingData.unit)
+            let result = true
+            for (var i = startCnt; i < endCnt; i++) {
+                if (!this.isBusiness(rowIndex, i)) {
+                    result = false
+                }
+            }
+            return result
+        },
+        /**
          * The column are click start event
          * 
          * @param Object e Event
@@ -727,7 +630,7 @@ new Vue({
                 let newEndDateObj = this.addMinutes(new Date(this.settingData.startDate), addMinutes)
                 let isPermission = true
                 // Check other event
-                for(n in this.scheduleData[this.isSelectingRowIndex].schedule) {
+                for(var n = 0; n < this.scheduleData[this.isSelectingRowIndex].schedule.length; n++) {
                     if (n != targetIndex) {
                         let diffData = this.scheduleData[this.isSelectingRowIndex].schedule[n]
                         if ((new Date(diffData.start) - new Date(targetData.start)) < 0) {
@@ -740,7 +643,7 @@ new Vue({
                     }
                 }
                 // Check Businessday
-                // TODO
+                isPermission = this.isBusinessOnRange(this.isSelectingRowIndex, targetData.start, this.datetimeFormatter(newEndDateObj))
                 if (isPermission) {
                     targetData.end = this.datetimeFormatter(newEndDateObj)
                 }
@@ -749,9 +652,21 @@ new Vue({
         /**
          * Add new block event
          * 
+         * @param Boolean isAdd     Is add event action
+         * @param String  startDate StartDate text
+         * @param String  endDate   EndDate text
+         * 
          * @returns void 
          */
-        selectEndTime() {
+        selectEndTime(startDate, endDate) {
+            if (this.isSelecting) {
+                if (startDate == undefined) {
+                    let targetData = this.scheduleData[this.isSelectingRowIndex].schedule[this.scheduleData[this.isSelectingRowIndex].schedule.length - 1]
+                    startDate = targetData.start
+                    endDate = targetData.end
+                }
+                this.$emit('add-event', this.isSelectingRowIndex, startDate, endDate)
+            }
             this.isSelecting = false
             this.isSelectingRowIndex = null
             this.isSelectingIndex = null
@@ -769,21 +684,9 @@ new Vue({
         moveScheduleData(rowIndex, keyNo, unitCnt) {
             let targetData = this.scheduleData[rowIndex].schedule[keyNo]
             if (targetData) {
+                let status = 0
                 let isBusinessFlag = true
                 let isBusinessChecked = false
-                let isBusiness = (startDatetimeText, endDatetimeText) => {
-                    let startDiff = this.getMinutesDiff(new Date(this.settingData.startDate), new Date(startDatetimeText))
-                    let startCnt = parseInt(startDiff / this.settingData.unit)
-                    let endDiff = this.getMinutesDiff(new Date(this.settingData.startDate), new Date(endDatetimeText))
-                    let endCnt = parseInt(endDiff / this.settingData.unit)
-                    let result = true
-                    for (var i = startCnt; i < endCnt; i++) {
-                        if (!this.isBusiness(this.dragenterRowIndex, i)) {
-                            result = false
-                        }
-                    }
-                    return result
-                }
                 if (unitCnt != 0) {
                     let changeDatetimeText = (datetimeText) => {
                         let addMinutes = unitCnt * this.settingData.unit
@@ -793,26 +696,30 @@ new Vue({
                     }
                     let newStartDatetime = changeDatetimeText(targetData.start)
                     let newEndDatetime = changeDatetimeText(targetData.end)
-                    isBusinessFlag = isBusiness(newStartDatetime, newEndDatetime)
+                    isBusinessFlag = this.isBusinessOnRange(this.dragenterRowIndex, newStartDatetime, newEndDatetime)
                     if (isBusinessFlag) {
                         targetData.start = newStartDatetime
                         targetData.end = newEndDatetime
+                        status = 1
                     }
                     isBusinessChecked = true
                 }
                 if (rowIndex != this.dragenterRowIndex && this.scheduleData[this.dragenterRowIndex]) {
                     if (isBusinessChecked && !isBusinessFlag) {
+                        this.$emit('move-event', status)
                         return
                     }
                     if (!isBusinessChecked && isBusinessFlag) {
-                        isBusinessFlag = isBusiness(targetData.start, targetData.end)
+                        isBusinessFlag = this.isBusinessOnRange(this.dragenterRowIndex, targetData.start, targetData.end)
                         isBusinessChecked = true
                     }
                     if (isBusinessChecked && isBusinessFlag) {
                         this.scheduleData[this.dragenterRowIndex].schedule.push(targetData)
                         this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
+                        status = 1
                     }
                 }
+                this.$emit('move-event', status, targetData.start, targetData.end)
             }
         },
         /**
@@ -853,6 +760,7 @@ new Vue({
          */
         deleteScheduleData(rowIndex, keyNo) {
             this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
+            this.$emit('delete-event', rowIndex, keyNo)
         },
         /**
          * Get minutes diff between date1 and date2
@@ -866,5 +774,124 @@ new Vue({
             const diffTime = Math.abs(date2 - date1);
             return Math.ceil(diffTime / (1000 * 60));
         }
-    }
-})
+    },
+    template: `
+    <div 
+        class="schedule"
+        @dragover="disableDragendAnimation"
+      >
+        <div>
+          <div
+            class="sc-rows"
+            :style="{width: settingData.titleDivW + '%', height: contentH + 'px'}"
+          >
+            <div
+              class="sc-rows-scroll"
+              :style="{width: '100%'}"
+            >
+              <div 
+                v-for="(row, index) in scheduleData"
+                :key="index" 
+                :class="'timeline title'"
+                :style="{'height': settingData.rowH + 'px', 'padding-top': (index == 0) ? padding + 'px' : '0px'}"
+                @click="$emit('row-click-event', index, row.title)"
+              >
+                <span style="cursor: pointer;">{{ row.title }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="sc-main-box" :style="{width: (100 - settingData.titleDivW) + '%'}">
+            <div
+              class="sc-main-scroll"
+              :style="{width: contentW + 'px'}"
+            >
+              <div class="sc-main">
+                <div
+                  class="timeline"
+                  :style="{height: settingData.dateDivH + 'px', background: 'black'}"
+                >
+                  <div
+                    v-for="n in dateCnt"
+                    :key="n"
+                    class="sc-time"
+                    :style="{width: dateDivW + 'px', cursor: 'pointer'}"
+                    @click="$emit('date-click-event', getHeaderDate(n-1))"
+                  >
+                    {{ getHeaderDate(n-1) }}
+                  </div>
+                </div>
+                <div
+                  class="timeline"
+                  :style="{height: settingData.timeDivH + 'px', background: '#6187AE'}"
+                >
+                  <div 
+                    v-for="n in (dateCnt * 24)"
+                    :key="n"
+                    class="sc-time"
+                    :style="{width: timeDivW + 'px'}"
+                  >
+                    {{ getHeaderTime(n - 1) }}
+                  </div>
+                </div>
+                <div 
+                  v-for="(row, index) in scheduleData" 
+                  :key="index"
+                  :class="'timeline'"
+                  :style="{'height': settingData.rowH + 'px'}"
+                  @dragenter="setDragenterRow(index)"
+                >
+                  <unit-div 
+                    v-for="n in unitCnt"
+                    :key="'unit' + n"
+                    :row-index="index"
+                    :key-index="n"
+                    :row-data="row"
+                    :is-business="isBusiness(index, (n - 1))"
+                    :is-selecting="isSelecting"
+                    :is-selecting-row-index="isSelectingRowIndex"
+                    :width="settingData.unitDivW + 'px'"
+                    @mouse-down="selectStartTime"
+                    @mouse-enter="adjustTimeRange"
+                    @mouse-up="selectEndTime"
+                    @set-dragenter-row-and-index="setDragenterRowAndIndex"
+                  ></unit-div>
+                  <reserved-div 
+                    v-for="(detail, keyNo) in row.schedule"
+                    :key="'res' + keyNo"
+                    :schedule-detail="detail"
+                    :row-index="index"
+                    :key-no="keyNo"
+                    :start-text="detail.start"
+                    :end-text="detail.end"
+                    :content-text="detail.text"
+                    :unit-width="settingData.unitDivW"
+                    :unit-height="settingData.rowH"
+                    :title-div-width="settingData.titleDivW"
+                    :border-width="settingData.borderW"
+                    :min-date="settingData.startDate"
+                    :max-date="settingData.endDate"
+                    :unit="settingData.unit"
+                    :clear-switch="clearSwitch"
+                    :dragenter-row-index="dragenterRowIndex"
+                    :dragenter-key-index="dragenterKeyIndex"
+                    :is-selecting="isSelecting"
+                    :is-selecting-row-index="isSelectingRowIndex"
+                    :is-selecting-index="isSelectingIndex"
+                    @set-dragenter-row-and-index="setDragenterRowAndIndex"
+                    @move-schedule-data="moveScheduleData"
+                    @edit-schedule-data="editScheduleData"
+                    @delete-schedule-data="deleteScheduleData"
+                    @mouse-up="selectEndTime"
+                    @move-event="$emit('move-event')"
+                    @edit-event="$emit('edit-event', detail.start, detail.end)"
+                    @click-event="$emit('click-event', detail.start, detail.end, detail.text, detail.data)"
+                  ></reserved-div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <br class="clear">
+        </div>
+      </div>
+    `
+}

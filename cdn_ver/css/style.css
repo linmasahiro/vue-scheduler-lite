@@ -13,6 +13,10 @@
     position: relative;
 }
 
+.schedule .sc-rows .title{
+    background: #6187AE;
+}
+
 .schedule .sc-rows .sc-rows-scroll {
     position: absolute;
     left: 0;
@@ -28,12 +32,6 @@
     float: left;
     border-right: solid 1px #CCC;
     text-align: center;
-}
-
-.schedule .sc-main-box,
-.schedule .sc-rows {
-    max-height: 500px;
-    overflow: hidden;
 }
 
 .schedule .sc-main-box {
@@ -140,10 +138,6 @@
     background-color: #999 !important;
 }
 
-.schedule .selected_time {
-    background-color: #a0e7c9;
-}
-
 .schedule .isMe {
     background-color: #108000 !important;
 }
@@ -166,4 +160,19 @@
     position: absolute;
     font-size: 0.1px;
     display: block;
+}
+
+.sample {
+    width: 10px;
+    height: 10px;
+    margin: 5px;
+    border: 1px solid black;
+}
+
+.cant-res {
+    background-color: #999 !important;
+}
+
+.reserved {
+    background-color: #ec920a !important;
 }

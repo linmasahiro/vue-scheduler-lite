@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src * gap: ws: https://ssl.gstatic.com;style-src * 'unsafe-inline' 'self' data: blob:;script-src * 'unsafe-inline' 'unsafe-eval' data: blob:;img-src * data: 'unsafe-inline' 'self'">
+    <title>Vue Scheduler Sample</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+  <link rel="stylesheet" href="./css/style.css">
+  <body style="margin: auto;">
+    <div id="app">
+      <div>
+        <input type="button" value="Add new row" @click="addNewRow"/>
+      </div>
+      <sc 
+        :schedule-data="scData"
+        :setting="setting"
+        @row-click-event="rowClickEvent"
+        @date-click-event="dateClickEvent"
+        @click-event="clickEvent"
+        @add-event="addEvent"
+        @move-event="moveEvent"
+        @edit-event="editEvent"
+        @delete-event="deleteEvent"
+      ></sc>
+      <div style="display: flex;">
+        <span>Guide: </span>
+        <div class="sample"></div>
+        <span>Normal</span>
+        <div class="sample cant-res"></div>
+        <span>Not BusinessDay</span>
+        <div class="sample reserved"></div>
+        <span>Reserved</span>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript" src="./src/polyfill.js"></script>
+  <script type="text/javascript" src="./src/vue-scheduler-lite.js"></script>
+  <script type="text/javascript" src="./src/app.js"></script>
+</html>
