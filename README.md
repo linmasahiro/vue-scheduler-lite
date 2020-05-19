@@ -1,6 +1,6 @@
 # vue-scheduler-lite
 
-![SampleGif](https://linmasahiro.github.io/vue-scheduler/sample.gif)
+![SampleGif](https://linmasahiro.github.io/vue-scheduler-lite/sample.gif)
 
 A very simple scheduler for vue.js
 
