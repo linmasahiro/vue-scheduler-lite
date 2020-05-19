@@ -7,7 +7,8 @@
  @author Lin Masahiro(k80092@hotmail.com)
  @see https://github.com/linmasahiro/vue-scheduler-lite
 
- MIT License
+ (c) 2020 Lin masahiro
+ Released under the MIT License.
 --->
 
 <template>
