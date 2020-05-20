@@ -202,6 +202,8 @@ new Vue({
             if (status == 1) {
                 console.log("NewStartDate:" + newStartDate)
                 console.log("NewEndDate:" + newEndDate)
+            } else if (status == 2) {
+                console.log("Has other event, can't move.")
             } else {
                 console.log("Not businessDay, can't move.")
             }

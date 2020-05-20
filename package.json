@@ -1,6 +1,6 @@
 {
   "name": "vue-scheduler-lite",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A support drag and drop scheduler on vue.js",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "drop",
     "mobile"
   ],
-  "author": "Lin Masahiro",
+  "author": "Lin Masahiro(k80092@hotmail.com)",
   "license": "MIT",
   "private": false,
   "bugs": {

@@ -760,6 +760,42 @@ export default {
       return result;
     },
     /**
+     * Check this range has other event
+     *
+     * @param Int    index         Data index
+     * @param Int    rowIndex      Row index
+     * @param String startDateText StartDate text
+     * @param String endDateText   EndDate text
+     *
+     * @returns Boolean
+     */
+    hasOtherEvent(index, rowIndex, startDateText, endDateText) {
+      for (var n = 0; n < this.scheduleData[rowIndex].schedule.length; n++) {
+        if (n != index) {
+          let diffData = this.scheduleData[rowIndex].schedule[n];
+          if (
+            new Date(diffData.start) - new Date(startDateText) >= 0 &&
+            new Date(diffData.end) - new Date(endDateText) <= 0
+          ) {
+            return true;
+          }
+          if (
+            new Date(diffData.start) - new Date(startDateText) >= 0 &&
+            new Date(diffData.start) - new Date(endDateText) < 0
+          ) {
+            return true;
+          }
+          if (
+            new Date(diffData.start) - new Date(startDateText) <= 0 &&
+            new Date(diffData.end) - new Date(startDateText) > 0
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+    /**
      * The column are click start event
      *
      * @param Object e Event
@@ -804,30 +840,31 @@ export default {
           new Date(this.settingData.startDate),
           addMinutes
         );
+        let newEndDateText = this.datetimeFormatter(newEndDateObj);
         let isPermission = true;
+
         // Check other event
-        for(var n = 0; n < this.scheduleData[this.isSelectingRowIndex].schedule.length; n++) {
-          if (n != targetIndex) {
-            let diffData = this.scheduleData[this.isSelectingRowIndex].schedule[
-              n
-            ];
-            if (new Date(diffData.start) - new Date(targetData.start) < 0) {
-              continue;
-            }
-            if (new Date(diffData.start) - newEndDateObj >= 0) {
-              continue;
-            }
-            isPermission = false;
-          }
+        if (
+          this.hasOtherEvent(
+            targetIndex,
+            this.isSelectingRowIndex,
+            targetData.start,
+            newEndDateText
+          )
+        ) {
+          isPermission = false;
         }
+
         // Check Businessday
-        isPermission = this.isBusinessOnRange(
-          this.isSelectingRowIndex,
-          targetData.start,
-          this.datetimeFormatter(newEndDateObj)
-        );
         if (isPermission) {
-          targetData.end = this.datetimeFormatter(newEndDateObj);
+          isPermission = this.isBusinessOnRange(
+            this.isSelectingRowIndex,
+            targetData.start,
+            newEndDateText
+          );
+        }
+        if (isPermission) {
+          targetData.end = newEndDateText;
         }
       }
     },
@@ -880,17 +917,29 @@ export default {
           };
           let newStartDatetime = changeDatetimeText(targetData.start);
           let newEndDatetime = changeDatetimeText(targetData.end);
-          isBusinessFlag = this.isBusinessOnRange(
-            this.dragenterRowIndex,
-            newStartDatetime,
-            newEndDatetime
-          );
-          if (isBusinessFlag) {
-            targetData.start = newStartDatetime;
-            targetData.end = newEndDatetime;
-            status = 1;
+
+          if (
+            this.hasOtherEvent(
+              keyNo,
+              this.dragenterRowIndex,
+              newStartDatetime,
+              newEndDatetime
+            )
+          ) {
+            status = 2;
+          } else {
+            isBusinessFlag = this.isBusinessOnRange(
+              this.dragenterRowIndex,
+              newStartDatetime,
+              newEndDatetime
+            );
+            if (isBusinessFlag) {
+              targetData.start = newStartDatetime;
+              targetData.end = newEndDatetime;
+              status = 1;
+            }
+            isBusinessChecked = true;
           }
-          isBusinessChecked = true;
         }
         if (
           rowIndex != this.dragenterRowIndex &&
@@ -901,6 +950,18 @@ export default {
             return;
           }
           if (!isBusinessChecked && isBusinessFlag) {
+            if (
+              this.hasOtherEvent(
+                keyNo,
+                this.dragenterRowIndex,
+                newStartDatetime,
+                newEndDatetime
+              )
+            ) {
+              status = 2;
+              this.$emit("move-event", status);
+              return;
+            }
             isBusinessFlag = this.isBusinessOnRange(
               this.dragenterRowIndex,
               targetData.start,
@@ -976,149 +1037,149 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .clear {
-    clear: both;
-    height: 0;
-    line-height: 0;
+  clear: both;
+  height: 0;
+  line-height: 0;
 }
 
 .sc-rows {
-    float: left;
-    font-weight: bold;
-    background: #6187AE;
-    border-color: #c0c0c0;
-    color: white;
-    position: relative;
+  float: left;
+  font-weight: bold;
+  background: #6187ae;
+  border-color: #c0c0c0;
+  color: white;
+  position: relative;
 }
 
-.sc-rows .title{
-    background: #6187AE;
+.sc-rows .title {
+  background: #6187ae;
 }
 
 .sc-rows .sc-rows-scroll {
-    position: absolute;
-    left: 0;
-    top: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 .sc-main-scroll .sc-time {
-    color: #FFFFFF;
-    padding: 4px 0;
-    line-height: 18px;
-    height: 18px;
-    display: block;
-    float: left;
-    border-right: solid 1px #CCC;
-    text-align: center;
+  color: #ffffff;
+  padding: 4px 0;
+  line-height: 18px;
+  height: 18px;
+  display: block;
+  float: left;
+  border-right: solid 1px #ccc;
+  text-align: center;
 }
 
 .sc-main-box {
-    float: left;
-    overflow-x: auto;
-    overflow-y: auto;
+  float: left;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .sc-main {
-    position: relative;
+  position: relative;
 }
 
 .timeline {
-    position: relative;
+  position: relative;
 }
 
 .sc-bar {
-    position: absolute;
-    color: #FFF;
-    background: #ff4800;
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: 2px 2px 4px #333;
-    -moz-box-shadow: 2px 2px 4px #333;
-    -webkit-box-shadow: 2px 2px 4px #333;
+  position: absolute;
+  color: #fff;
+  background: #ff4800;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 2px 2px 4px #333;
+  -moz-box-shadow: 2px 2px 4px #333;
+  -webkit-box-shadow: 2px 2px 4px #333;
 }
 
 .ui-draggable-dragging,
 .ui-resizeable {
-    z-index: 20;
+  z-index: 20;
 }
 
 .timeline,
 .sc-main .tb {
-    border-bottom: solid 2px #666;
+  border-bottom: solid 2px #666;
 }
 
 .sc-rows .timeline {
-    overflow: hidden;
+  overflow: hidden;
 }
 
 .sc-rows .timeline span {
-    padding: 10px;
-    display: block;
+  padding: 10px;
+  display: block;
 }
 
 .sc-rows .timeline span.photo {
-    float: left;
-    width: 36px;
-    height: 36px;
-    padding: 10px 0 10px 10px;
+  float: left;
+  width: 36px;
+  height: 36px;
+  padding: 10px 0 10px 10px;
 }
 
 .sc-rows .timeline span.title {
-    float: left;
-    padding: 10px 0 10px 10px;
-    width: 92px;
+  float: left;
+  padding: 10px 0 10px 10px;
+  width: 92px;
 }
 
 .sc-main-scroll .sc-main .tl {
-    float: left;
-    height: 100%;
-    border-right: solid 1px #CCC;
+  float: left;
+  height: 100%;
+  border-right: solid 1px #ccc;
 }
 
 .sc-main-scroll .sc-main .tl:hover {
-    background: #F0F0F0;
+  background: #f0f0f0;
 }
 
 .sc-time {
-    font-size: 10px;
+  font-size: 10px;
 }
 
 .cant-res {
-    background-color: #999 !important;
+  background-color: #999 !important;
 }
 
 .isMe {
-    background-color: #108000 !important;
+  background-color: #108000 !important;
 }
 
 .notMe {
-    background-color: #ec920a !important;
+  background-color: #ec920a !important;
 }
 
 /deep/ .sc-bar .head {
-    display: block;
-    padding: 6px 8px 0;
-    font-size: 12px;
-    height: 16px;
-    overflow: hidden;
+  display: block;
+  padding: 6px 8px 0;
+  font-size: 12px;
+  height: 16px;
+  overflow: hidden;
 }
 
 /deep/ .sc-bar .text {
-    display: block;
-    padding: 5px 15px 0;
-    font-weight: bold;
-    height: 18px;
-    overflow: hidden;
+  display: block;
+  padding: 5px 15px 0;
+  font-weight: bold;
+  height: 18px;
+  overflow: hidden;
 }
 
 /deep/ .resizable-e {
-    cursor: e-resize;
-    width: 10px;
-    right: -5px;
-    top: 0;
-    height: 100%;
-    z-index: 90;
-    position: absolute;
-    font-size: 0.1px;
-    display: block;
+  cursor: e-resize;
+  width: 10px;
+  right: -5px;
+  top: 0;
+  height: 100%;
+  z-index: 90;
+  position: absolute;
+  font-size: 0.1px;
+  display: block;
 }
 </style>
