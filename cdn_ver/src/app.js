@@ -158,7 +158,7 @@ const sampleSetting = {
 new Vue({
     el: '#app',
     components: {
-        'sc': vueSc
+        'sc': vueSchedulerLite
     },
     data: function() {
         return {

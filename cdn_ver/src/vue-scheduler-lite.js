@@ -348,7 +348,7 @@ const reservedDiv = {
     `
 }
 
-const vueSc = {
+const vueSchedulerLite = {
     components: {
         'unit-div': unitDiv,
         'reserved-div': reservedDiv
