@@ -599,39 +599,40 @@ const vueSc = {
         },
         /**
          * Check this range has other event
-         * 
+         *
          * @param Int    index         Data index
-         * @param Int    rowIndex      Row index
+         * @param Int    oldRowIndex   Old row index
+         * @param Int    newRowIndex   New row index
          * @param String startDateText StartDate text
          * @param String endDateText   EndDate text
-         * 
+         *
          * @returns Boolean
          */
-        hasOtherEvent(index, rowIndex, startDateText, endDateText) {
-            for (var n = 0; n < this.scheduleData[rowIndex].schedule.length; n++) {
-                if (n != index) {
-                    let diffData = this.scheduleData[rowIndex].schedule[n]
+        hasOtherEvent(index, oldRowIndex, newRowIndex, startDateText, endDateText) {
+            for (var n = 0; n < this.scheduleData[newRowIndex].schedule.length; n++) {
+                if (n != index || oldRowIndex != newRowIndex) {
+                    let diffData = this.scheduleData[newRowIndex].schedule[n];
                     if (
-                        (new Date(diffData.start) - new Date(startDateText)) >= 0 &&
-                        (new Date(diffData.end) - new Date(endDateText)) <= 0
+                        new Date(diffData.start) - new Date(startDateText) >= 0 &&
+                        new Date(diffData.end) - new Date(endDateText) <= 0
                     ) {
-                        return true
+                        return true;
                     }
                     if (
-                        (new Date(diffData.start) - new Date(startDateText)) >= 0 &&
-                        (new Date(diffData.start) - new Date(endDateText)) < 0
+                        new Date(diffData.start) - new Date(startDateText) >= 0 &&
+                        new Date(diffData.start) - new Date(endDateText) < 0
                     ) {
-                        return true
+                        return true;
                     }
                     if (
-                        (new Date(diffData.start) - new Date(startDateText)) <= 0 &&
-                        (new Date(diffData.end) - new Date(startDateText)) > 0
+                        new Date(diffData.start) - new Date(startDateText) <= 0 &&
+                        new Date(diffData.end) - new Date(startDateText) > 0
                     ) {
-                        return true
+                        return true;
                     }
                 }
             }
-            return false
+            return false;
         },
         /**
          * The column are click start event
@@ -660,25 +661,43 @@ const vueSc = {
          * @param int keyIndex 
          */
         adjustTimeRange(keyIndex) {
-            let targetIndex = (this.scheduleData[this.isSelectingRowIndex].schedule.length - 1)
-            let targetData = this.scheduleData[this.isSelectingRowIndex].schedule[targetIndex]
+            let targetIndex =
+                this.scheduleData[this.isSelectingRowIndex].schedule.length - 1;
+            let targetData = this.scheduleData[this.isSelectingRowIndex].schedule[
+                targetIndex
+            ];
             if (targetData) {
-                let addMinutes = keyIndex * this.settingData.unit
-                let newEndDateObj = this.addMinutes(new Date(this.settingData.startDate), addMinutes)
-                let newEndDateText = this.datetimeFormatter(newEndDateObj)
-                let isPermission = true
+                let addMinutes = keyIndex * this.settingData.unit;
+                let newEndDateObj = this.addMinutes(
+                    new Date(this.settingData.startDate),
+                    addMinutes
+                );
+                let newEndDateText = this.datetimeFormatter(newEndDateObj);
+                let isPermission = true;
 
                 // Check other event
-                if (this.hasOtherEvent(targetIndex, this.isSelectingRowIndex, targetData.start, newEndDateText)) {
-                    isPermission = false
+                if (
+                    this.hasOtherEvent(
+                        targetIndex,
+                        this.isSelectingRowIndex,
+                        this.isSelectingRowIndex,
+                        targetData.start,
+                        newEndDateText
+                    )
+                ) {
+                    isPermission = false;
                 }
-                
+
                 // Check Businessday
                 if (isPermission) {
-                    isPermission = this.isBusinessOnRange(this.isSelectingRowIndex, targetData.start, newEndDateText)
+                    isPermission = this.isBusinessOnRange(
+                        this.isSelectingRowIndex,
+                        targetData.start,
+                        newEndDateText
+                    );
                 }
                 if (isPermission) {
-                    targetData.end = newEndDateText
+                    targetData.end = newEndDateText;
                 }
             }
         },
@@ -715,55 +734,81 @@ const vueSc = {
          * @returns void 
          */
         moveScheduleData(rowIndex, keyNo, unitCnt) {
-            let targetData = this.scheduleData[rowIndex].schedule[keyNo]
+            let targetData = this.scheduleData[rowIndex].schedule[keyNo];
             if (targetData) {
-                let status = 0
-                let isBusinessFlag = true
-                let isBusinessChecked = false
-                if (unitCnt != 0) {
-                    let changeDatetimeText = (datetimeText) => {
-                        let addMinutes = unitCnt * this.settingData.unit
-                        let dateObj = new Date(datetimeText)
-                        let newDateObj = this.addMinutes(dateObj, addMinutes)
-                        return this.datetimeFormatter(newDateObj)
-                    }
-                    let newStartDatetime = changeDatetimeText(targetData.start)
-                    let newEndDatetime = changeDatetimeText(targetData.end)
+                let status = 0;
+                let isBusinessFlag = true;
+                let isBusinessChecked = false;
+                let changeDatetimeText = datetimeText => {
+                    let addMinutes = unitCnt * this.settingData.unit;
+                    let dateObj = new Date(datetimeText);
+                    let newDateObj = this.addMinutes(dateObj, addMinutes);
+                    return this.datetimeFormatter(newDateObj);
+                };
+                let newStartDatetime = changeDatetimeText(targetData.start);
+                let newEndDatetime = changeDatetimeText(targetData.end);
 
-                    if (this.hasOtherEvent(keyNo, this.dragenterRowIndex, newStartDatetime, newEndDatetime)) {
-                        status = 2
+                if (unitCnt != 0) {
+                    if (
+                        this.hasOtherEvent(
+                            keyNo,
+                            rowIndex,
+                            this.dragenterRowIndex,
+                            newStartDatetime,
+                            newEndDatetime
+                        )
+                    ) {
+                        status = 2;
                     } else {
-                        isBusinessFlag = this.isBusinessOnRange(this.dragenterRowIndex, newStartDatetime, newEndDatetime)
+                        isBusinessFlag = this.isBusinessOnRange(
+                            this.dragenterRowIndex,
+                            newStartDatetime,
+                            newEndDatetime
+                        );
                         if (isBusinessFlag) {
-                            targetData.start = newStartDatetime
-                            targetData.end = newEndDatetime
-                            status = 1
+                            targetData.start = newStartDatetime;
+                            targetData.end = newEndDatetime;
+                            status = 1;
                         }
-                        isBusinessChecked = true
+                        isBusinessChecked = true;
                     }
-                    
                 }
-                if (rowIndex != this.dragenterRowIndex && this.scheduleData[this.dragenterRowIndex]) {
+                if (
+                    rowIndex != this.dragenterRowIndex &&
+                    this.scheduleData[this.dragenterRowIndex]
+                ) {
                     if (isBusinessChecked && !isBusinessFlag) {
-                        this.$emit('move-event', status)
-                        return
+                        this.$emit("move-event", status);
+                        return;
                     }
                     if (!isBusinessChecked && isBusinessFlag) {
-                        if (this.hasOtherEvent(keyNo, this.dragenterRowIndex, newStartDatetime, newEndDatetime)) {
-                            status = 2
-                            this.$emit('move-event', status)
-                            return
+                        if (
+                            this.hasOtherEvent(
+                                keyNo,
+                                rowIndex,
+                                this.dragenterRowIndex,
+                                newStartDatetime,
+                                newEndDatetime
+                            )
+                        ) {
+                            status = 2;
+                            this.$emit("move-event", status);
+                            return;
                         }
-                        isBusinessFlag = this.isBusinessOnRange(this.dragenterRowIndex, targetData.start, targetData.end)
-                        isBusinessChecked = true
+                        isBusinessFlag = this.isBusinessOnRange(
+                            this.dragenterRowIndex,
+                            targetData.start,
+                            targetData.end
+                        );
+                        isBusinessChecked = true;
                     }
                     if (isBusinessChecked && isBusinessFlag) {
-                        this.scheduleData[this.dragenterRowIndex].schedule.push(targetData)
-                        this.scheduleData[rowIndex].schedule.splice(keyNo, 1)
-                        status = 1
+                        this.scheduleData[this.dragenterRowIndex].schedule.push(targetData);
+                        this.scheduleData[rowIndex].schedule.splice(keyNo, 1);
+                        status = 1;
                     }
                 }
-                this.$emit('move-event', status, targetData.start, targetData.end)
+                this.$emit("move-event", status, targetData.start, targetData.end);
             }
         },
         /**

@@ -763,16 +763,17 @@ export default {
      * Check this range has other event
      *
      * @param Int    index         Data index
-     * @param Int    rowIndex      Row index
+     * @param Int    oldRowIndex   Old row index
+     * @param Int    newRowIndex   New row index
      * @param String startDateText StartDate text
      * @param String endDateText   EndDate text
      *
      * @returns Boolean
      */
-    hasOtherEvent(index, rowIndex, startDateText, endDateText) {
-      for (var n = 0; n < this.scheduleData[rowIndex].schedule.length; n++) {
-        if (n != index) {
-          let diffData = this.scheduleData[rowIndex].schedule[n];
+    hasOtherEvent(index, oldRowIndex, newRowIndex, startDateText, endDateText) {
+      for (var n = 0; n < this.scheduleData[newRowIndex].schedule.length; n++) {
+        if (n != index || oldRowIndex != newRowIndex) {
+          let diffData = this.scheduleData[newRowIndex].schedule[n];
           if (
             new Date(diffData.start) - new Date(startDateText) >= 0 &&
             new Date(diffData.end) - new Date(endDateText) <= 0
@@ -848,6 +849,7 @@ export default {
           this.hasOtherEvent(
             targetIndex,
             this.isSelectingRowIndex,
+            this.isSelectingRowIndex,
             targetData.start,
             newEndDateText
           )
@@ -908,19 +910,20 @@ export default {
         let status = 0;
         let isBusinessFlag = true;
         let isBusinessChecked = false;
+        let changeDatetimeText = datetimeText => {
+          let addMinutes = unitCnt * this.settingData.unit;
+          let dateObj = new Date(datetimeText);
+          let newDateObj = this.addMinutes(dateObj, addMinutes);
+          return this.datetimeFormatter(newDateObj);
+        };
+        let newStartDatetime = changeDatetimeText(targetData.start);
+        let newEndDatetime = changeDatetimeText(targetData.end);
+        
         if (unitCnt != 0) {
-          let changeDatetimeText = datetimeText => {
-            let addMinutes = unitCnt * this.settingData.unit;
-            let dateObj = new Date(datetimeText);
-            let newDateObj = this.addMinutes(dateObj, addMinutes);
-            return this.datetimeFormatter(newDateObj);
-          };
-          let newStartDatetime = changeDatetimeText(targetData.start);
-          let newEndDatetime = changeDatetimeText(targetData.end);
-
           if (
             this.hasOtherEvent(
               keyNo,
+              rowIndex,
               this.dragenterRowIndex,
               newStartDatetime,
               newEndDatetime
@@ -953,6 +956,7 @@ export default {
             if (
               this.hasOtherEvent(
                 keyNo,
+                rowIndex,
                 this.dragenterRowIndex,
                 newStartDatetime,
                 newEndDatetime
