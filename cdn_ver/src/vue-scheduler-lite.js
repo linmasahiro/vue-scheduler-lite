@@ -197,6 +197,12 @@ const reservedDiv = {
             }
             if (this.isEdit) {
                 if (e) {
+                    let width = e.x + e.layerX
+                    if (this.mouseXStarted > width) {
+                        this.mouseXStarted = width
+                        return
+                    }
+
                     // adjust by Mouse X-axio
                     let movePx = e.clientX - this.mouseXStarted
                     let unitCnt = parseInt(movePx / this.unitWidth)
@@ -830,11 +836,8 @@ const vueSchedulerLite = {
                     return this.datetimeFormatter(newDateObj)
                 }
                 let newEndText = changeDatetimeText(targetData.end)
-                if (targetData.start == newEndText) {
-                    return false
-                }
-                if (new Date(newEndText) - new Date(targetData.start) < 0) {
-                    return false
+                if (this.hasOtherEvent(keyNo, rowIndex, rowIndex, targetData.start, newEndText)) {
+                    return
                 }
                 targetData.end = newEndText
             }
