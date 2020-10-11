@@ -15,3 +15,6 @@ A very simple scheduler for vue.js
 + Drag and Drop Support
 + Resize Schedule Support
 + Touch Device Support (Require [DragDropTouch.js](https://github.com/Bernardo-Castilho/dragdroptouch))
+
+### NEW!! Vue3.0 version
+[Vue3.0 version](https://www.npmjs.com/package/vue3-scheduler-lite)
